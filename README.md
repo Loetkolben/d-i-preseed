@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2020 Loetkolben
+SPDX-License-Identifier: MIT
+-->
+
 # d-i-preseed
 
 Preseeds for the Debian installer (d-i).

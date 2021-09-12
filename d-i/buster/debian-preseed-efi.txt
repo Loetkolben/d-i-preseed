@@ -1,6 +1,10 @@
+# Adapted from https://gitlab.com/sgebauer/reinstall.sh/-/blob/master/preseed.cfg
+# SPDX-FileCopyrightText: 2021 Sven Gebauer
+# SPDX-FileCopyrightText: 2021 Loetkolben
+# SPDX-License-Identifier: MIT
+
 # See https://www.debian.org/releases/stretch/example-preseed.txt for a
 # documented example preseed file.
-# Adapted from https://gitlab.com/sgebauer/reinstall.sh/-/blob/master/preseed.cfg
 
 d-i debian-installer/language string en
 d-i debian-installer/country string DE

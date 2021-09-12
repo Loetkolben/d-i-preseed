@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2020 Loetkolben
+SPDX-License-Identifier: MIT
+-->
+
 # partman documentation
 
 partman is the thing responsible for partitioning in the debian installer
@@ -12,7 +17,9 @@ It is NOT complete, but only a snapshot of what I needed / though important
 from my quest.
 
 ## Recipes
-General Format (taken from partman-auto-recipe.txt)
+General Format (quoted from partman-auto-recipe.txt, original Copyright
+2001-2009 by Joey Hess <joeyh@debian.org> and the d-i team, licensed under the
+terms of the GNU GPL 2 or any later version)
 ```
 In the following rules we denote spaces by "_".
 
@@ -50,29 +57,43 @@ Priority is typically between minimal and maximal size, details about
 the algorithm for choosing the real size are in partman-auto-recipe.txt,
 but `priority - minimal` could be considered a weight.
 
-Example from partman-auto-recipe.txt:
+Example with the following partition Scheme:
+- Partition for Grub2 to store its stuff when in use with GPT ("BIOS Boot
+  partiton").  See https://en.wikipedia.org/wiki/BIOS_boot_partition and
+  https://www.gnu.org/software/grub/manual/grub/html_node/BIOS-installation.html
+- /boot partition (separate, if LVM)
+- /root, partman can only create one subvolume @rootfs
+- swap
 ```
-partman-auto/text/home_scheme ::
-
-300 4000 7000 ext3
-        $primary{ }
-        $bootable{ }
-        method{ format }
-        format{ }
-        use_filesystem{ }
-        filesystem{ ext3 }
-        mountpoint{ / } .
-
-64 512 300% linux-swap
-        method{ swap }
-        format{ } .
-
-100 10000 -1 ext3
-        method{ format }
-        format{ }
-        use_filesystem{ }
-        filesystem{ ext3 }
-        mountpoint{ /home } .
+bios-gpt-btrfs-atomic ::            
+    1 1 1 free                          
+        $iflabel{ gpt }                 
+        $reusemethod{ }                 
+        method{ biosgrub } .            
+    512 1024 1024 ext4                  
+        $defaultignore{ }               
+        $primary{ }                     
+        $bootable{ }                    
+        label{ deb-boot }               
+        method{ format }                
+        format{ }                       
+        use_filesystem{ }               
+        filesystem{ ext4 }              
+        mountpoint{ /boot } .           
+    1000 10000 -1 btrfs                 
+        $lvmok{ }                       
+        lv_name{ rootfs }               
+        label{ deb-root }               
+        method{ format }                
+        format{ }                       
+        use_filesystem{ }               
+        filesystem{ btrfs }             
+        mountpoint{ / } .               
+    100% 200% 300% linux-swap           
+        $lvmok{ }                       
+        lv_name{ swap }                 
+        method{ swap }                  
+        format{ } .                     
 ```
 
 ## parted fs
@@ -124,8 +145,14 @@ List of regular specifiers:
   `method{ format }` is also specified.
 - `lv_name{_<name>_}`: Name this logical volume (that is created instead of a
   partition) `name`.
-- `method{_format|swap|keep_}`: `format` marks the partition as to be formatted.
-  `swap` to create a swap partition. `keep` for no formatting.
+- `method{_<name>_}`: Name may be
+  - `format` marks the partition as to be formatted.
+  - `swap` to create a swap partition.
+  - `keep` for no formatting.
+  - `biosgrub` for BIOS boot partitions on GPT disks. See
+    https://en.wikipedia.org/wiki/BIOS_boot_partition and
+    https://www.gnu.org/software/grub/manual/grub/html_node/BIOS-installation.html
+    for more info.
 - `mountpoint{_<where>_}`: "Where to mount the partition."
 - `options/<name>{_<name>_}`: Mount options, for `nodev,ro` use
   `options/nodev{ nodev } options/ro{ ro }`.
