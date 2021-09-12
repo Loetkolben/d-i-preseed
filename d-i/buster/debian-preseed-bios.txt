@@ -1,0 +1,104 @@
+# See https://www.debian.org/releases/stretch/example-preseed.txt for a
+# documented example preseed file.
+# Adapted from https://gitlab.com/sgebauer/reinstall.sh/-/blob/master/preseed.cfg
+
+d-i debian-installer/language string en
+d-i debian-installer/country string DE
+d-i debian-installer/locale string en_US.UTF-8
+d-i keyboard-configuration/xkb-keymap select de
+
+# Autoconfigure the network
+d-i netcfg/choose_interface select auto
+d-i netcfg/disable_autoconfig boolean false
+
+# Default hostname and domain in case we don't get one from DHCP.
+d-i netcfg/get_hostname string unassigned-hostname
+d-i netcfg/get_domain string unassigned-domain
+
+# Disable that annoying WEP key dialog.
+d-i netcfg/wireless_wep string
+
+# If non-free firmware is needed for the network or other hardware, you can
+# configure the installer to always try to load it, without prompting. Or
+# change to false to disable asking.
+d-i hw-detect/load_firmware boolean true
+
+### Mirror settings
+d-i mirror/country string manual
+d-i mirror/http/hostname string deb.debian.org
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+
+### Account setup
+# Create root account with disabled password
+d-i passwd/root-login boolean true
+d-i passwd/root-password-crypted password *
+d-i passwd/make-user boolean false
+
+### Clock and time zone setup
+d-i clock-setup/utc boolean true
+d-i time/zone string UTC
+d-i clock-setup/ntp boolean true
+
+### Partitioning
+# Use automatic partitioning with LVM, a custom recipe and btrfs as rootfs
+# See https://salsa.debian.org/installer-team/debian-installer/blob/master/doc/devel/partman-auto-recipe.txt
+d-i partman/choose_label string gpt
+d-i partman/default_label string gpt
+d-i partman-basicfilesystems/choose_label string gpt
+d-i partman-basicfilesystems/default_label string gpt
+d-i partman-partitioning/choose_label string gpt
+d-i partman-partitioning/default_label string gpt
+d-i partman-auto/method string lvm
+d-i partman-auto-lvm/guided_size string max
+d-i partman-auto/expert_recipe string                                         \
+  btrfs-atomic ::                                                             \
+    1 1 1 free $iflabel{ gpt } $reusemethod{ } method{ biosgrub } .           \
+    256 512 512 ext3 $defaultignore{ } method{ format } format{ }             \
+      use_filesystem{ } filesystem{ ext4 } mountpoint{ /boot } .              \
+    900 10000 -1 btrfs $lvmok{ } method{ format } format{ }                   \
+      use_filesystem{ } filesystem{ btrfs } mountpoint{ / } .                 \
+    100% 512 200% linux-swap $lvmok{ } $reusemethod{ } method{ swap }         \
+      format{ } .
+
+# Destroy and overwrite stuff without asking
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/confirm_nooverwrite boolean true
+d-i partman-md/confirm boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+### Apt setup
+# Disable contrib and non-free repos by default
+d-i apt-setup/non-free boolean false
+d-i apt-setup/contrib boolean false
+
+# Disable popularity contest
+popularity-contest popularity-contest/participate boolean false
+
+# Use debian-updates and debian-security
+d-i apt-setup/services-select multiselect security, updates
+d-i apt-setup/security_host string security.debian.org
+
+### Package selection
+tasksel tasksel/first multiselect standard, ssh-server
+
+# Individual additional packages to install
+d-i pkgsel/include string python3
+
+### Boot loader installation
+# Install to MBR of the first device found
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i grub-installer/bootdev  string default
+
+### Finishing up the installation
+# Avoid that last message about the install being complete.
+d-i finish-install/reboot_in_progress note
+
+# Install SSH public key
+d-i preseed/late_command string mkdir -p /target/root/.ssh/ && echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII0HsSMvH0VNPLrXOezD3R2mNR294DZImcGABXPr8tin philip@Philip-Lapis-Ubuntu" >/target/root/.ssh/authorized_keys
