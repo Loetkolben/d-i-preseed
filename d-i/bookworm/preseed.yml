@@ -1,7 +1,11 @@
 # This file documents all the parameters that can be used to customize
 # the preseed file
 
-# 'BIOS' or 'EFI'
+# LVM | manual
+partitioning_style: LVM
+
+# BIOS | EFI
+# if partitioning_style == manual, boot_mode does not have any effect currently
 boot_mode: EFI
 
 # ssh keys to add to root's authorized_keys file

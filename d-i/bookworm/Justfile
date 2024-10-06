@@ -1,3 +1,4 @@
 all:
     makejinja -i preseed.cfg.jinja -d preseed.yml -D boot_mode=EFI -f -o efi.cfg
     makejinja -i preseed.cfg.jinja -d preseed.yml -D boot_mode=BIOS -f -o bios.cfg
+    makejinja -i preseed.cfg.jinja -d preseed.yml -D partitioning_style=manual -f -o manual-part.cfg

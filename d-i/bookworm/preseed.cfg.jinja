@@ -1,5 +1,9 @@
 #_preseed_V1
-# Preseed for Debian 12 Bookworm, GPT/{{ boot_mode | upper }}, LVM, btrfs
+# Preseed for Debian 12 Bookworm, btrfs
+# partitioning_style: {{ partitioning_style }}
+{% if partitioning_style != "manual" %}
+# boot_mode: {{ boot_mode }}
+{% endif %}
 # SPDX-FileCopyrightText: 2021-2024 niphi
 # SPDX-License-Identifier: MIT
 
@@ -62,6 +66,7 @@ d-i clock-setup/ntp boolean true
 
 ### Partitioning
 
+{% if partitioning_style == "LVM" %}
 # Select disk to partition. If the system has only one disk the installer will
 # default to using that. If multiple disks exist, you may be asked to partition
 # the disk: There will be multiple options with "Guided, use the entire disk",
@@ -105,7 +110,7 @@ d-i partman-lvm/confirm_nooverwrite boolean true
 # - 100% (normally as much as the machine has RAM) may be capped to some smaller
 #   value (debconf partman-auto/cap-ram), default is 1024 MB.
 
-{% if boot_mode | upper == "BIOS" %}
+{% if boot_mode == "BIOS" %}
 # Partition Scheme:
 # - Partition for Grub2 to store its stuff since we use GPT ("BIOS Boot partiton")
 #   See https://en.wikipedia.org/wiki/BIOS_boot_partition and
@@ -119,7 +124,7 @@ d-i partman-auto/expert_recipe string   \
         $iflabel{ gpt }                 \
         $reusemethod{ }                 \
         method{ biosgrub } .            \
-{% elif boot_mode | upper == "EFI" %}
+{% elif boot_mode == "EFI" %}
 # Partition Scheme:
 # - EFI system partition
 # - /boot partition (separate, because LVM)
@@ -167,9 +172,9 @@ d-i partman/confirm_nooverwrite boolean true
 
 # Force UEFI booting ('BIOS compatibility' will be lost). Default: false.
 # true means Debian will always boot with EFI even if BIOS-mode OSs exist.
-{% if boot_mode | upper == "BIOS" %}
+{% if boot_mode == "BIOS" %}
 #d-i partman-efi/non_efi_system boolean true
-{% elif boot_mode | upper == "EFI" %}
+{% elif boot_mode == "EFI" %}
 d-i partman-efi/non_efi_system boolean true
 {% endif %}
 # Ensure the partition table is GPT - this is required for EFI or BIOS/GPT
@@ -178,6 +183,9 @@ d-i partman-partitioning/default_label string gpt
 
 # When disk encryption is enabled, skip wiping the partitions beforehand.
 #d-i partman-auto-crypto/erase_disks boolean false
+{% elif partitioning_style == "manual" %}
+# no automatic partioning configured, must be done manually during setup
+{% endif %}
 
 ### Apt setup
 d-i apt-setup/non-free-firmware boolean true
