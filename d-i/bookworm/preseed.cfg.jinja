@@ -1,6 +1,6 @@
 #_preseed_V1
-# Preseed for Debian 12 Bookworm, GPT/BIOS, LVM, btrfs
-# SPDX-FileCopyrightText: 2021-2023 Loetkolben
+# Preseed for Debian 12 Bookworm, GPT/{{ boot_mode | upper }}, LVM, btrfs
+# SPDX-FileCopyrightText: 2021-2024 niphi
 # SPDX-License-Identifier: MIT
 
 ### Localization
@@ -52,7 +52,7 @@ d-i passwd/make-user boolean false
 # Root password, either in clear text
 #d-i passwd/root-password password r00tme
 #d-i passwd/root-password-again password r00tme
-# Disabled root password
+# or hashed, * means disabled root password
 d-i passwd/root-password-crypted password *
 
 ### Clock and time zone setup
@@ -98,13 +98,14 @@ d-i partman-lvm/confirm_nooverwrite boolean true
 
 # Partman custom recipe. Upstream dokumentation is avilable at
 # https://salsa.debian.org/installer-team/debian-installer/blob/master/doc/devel/partman-auto-recipe.txt
-# Some notes from me are also here
-# https://github.com/Loetkolben/d-i-preseed/blob/master/partman-doc.md
+# Some notes from me are also at $REPO_ROOT/partman-doc.md
 # Recipe is inspired from d-i/packages/partman-auto/recipes-arm64/atomic
 # I do not understand all parameters, so this is cargo cult "programming"...
 # Important things that are wrong in the documentation at the time of writing:
 # - 100% (normally as much as the machine has RAM) may be capped to some smaller
 #   value (debconf partman-auto/cap-ram), default is 1024 MB.
+
+{% if boot_mode | upper == "BIOS" %}
 # Partition Scheme:
 # - Partition for Grub2 to store its stuff since we use GPT ("BIOS Boot partiton")
 #   See https://en.wikipedia.org/wiki/BIOS_boot_partition and
@@ -118,6 +119,20 @@ d-i partman-auto/expert_recipe string   \
         $iflabel{ gpt }                 \
         $reusemethod{ }                 \
         method{ biosgrub } .            \
+{% elif boot_mode | upper == "EFI" %}
+# Partition Scheme:
+# - EFI system partition
+# - /boot partition (separate, because LVM)
+# - /root, partman can only create one subvolume @rootfs
+# - swap
+d-i partman-auto/expert_recipe string   \
+    efi-gpt-btrfs-atomic ::             \
+    512 1024 1024 free                  \
+        $iflabel{ gpt }                 \
+        $reusemethod{ }                 \
+        method{ efi }                   \
+        format{ } .                     \
+{% endif %}
     512 1024 1024 ext4                  \
         $defaultignore{ }               \
         $primary{ }                     \
@@ -143,7 +158,6 @@ d-i partman-auto/expert_recipe string   \
         method{ swap }                  \
         format{ } .                     \
 
-
 # This makes partman automatically partition without confirmation, provided
 # that you told it what to do using one of the methods above.
 d-i partman-partitioning/confirm_write_new_label boolean true
@@ -153,7 +167,11 @@ d-i partman/confirm_nooverwrite boolean true
 
 # Force UEFI booting ('BIOS compatibility' will be lost). Default: false.
 # true means Debian will always boot with EFI even if BIOS-mode OSs exist.
+{% if boot_mode | upper == "BIOS" %}
 #d-i partman-efi/non_efi_system boolean true
+{% elif boot_mode | upper == "EFI" %}
+d-i partman-efi/non_efi_system boolean true
+{% endif %}
 # Ensure the partition table is GPT - this is required for EFI or BIOS/GPT
 d-i partman-partitioning/choose_label string gpt
 d-i partman-partitioning/default_label string gpt

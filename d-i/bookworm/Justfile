@@ -1,0 +1,3 @@
+all:
+    makejinja -i preseed.cfg.jinja -D boot_mode=EFI -f -o efi.cfg
+    makejinja -i preseed.cfg.jinja -D boot_mode=BIOS -f -o bios.cfg

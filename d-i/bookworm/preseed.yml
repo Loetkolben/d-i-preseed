@@ -1,0 +1,5 @@
+# This file documents all the parameters that can be used to customize
+# the preseed file
+
+# 'BIOS' or 'EFI'
+boot_mode: EFI
