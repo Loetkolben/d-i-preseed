@@ -3,3 +3,7 @@
 
 # 'BIOS' or 'EFI'
 boot_mode: EFI
+
+# ssh keys to add to root's authorized_keys file
+ssh_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII0HsSMvH0VNPLrXOezD3R2mNR294DZImcGABXPr8tin niphi@lapis-linux"
